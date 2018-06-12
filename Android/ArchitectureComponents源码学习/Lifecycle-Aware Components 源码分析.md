@@ -395,6 +395,7 @@ public class MyComponent_LifecycleAdapter implements GeneratedAdapter {
 
 ```
 ## 其他
+
 前面提到的源码分析均是在 `AppCompatActivity/Fragment` 中进行的，现在说说其他地方的。首先 `support v4` 包中的 `Fragment` 和这个没有多大的区别，仍然是在 `Fragment` 实现了 `LifecycleOwner` 接口，但是没有加入  `ReportFragment` 的操作了，直接在执行生命周期的地方去执行 `mLifecycleRegistry.handleLifecycleEvent`。
 
 那么在普通 Activity 和 Fragment 里怎么做呢？官方文档有一段描述自定义 LifecycleRegistry 的做法可以实现这个：
