@@ -995,7 +995,7 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
     }
 ```
 
-可以看出，这个方法就是 `Activity` 用来将大量信息附加到自身，构造出一个完整的运行框架。`performLaunchActivity()` 再接下来的重要方法是执行 `mInstrumentation.callActivityOnCreate()`，这个和之前分析 `onPause/onStop` 时类似，很熟悉了，会执行 `Activity.onCreate()` 方法。在之后顺着 `performLaunchActivity()` 走下去，调用了 `activity.performStart()` 、`mInstrumentation.callActivityOnRestoreInstanceState()`、`mInstrumentation.callActivityOnPostCreate()` 相继去调用了 `onStart()`、`onRestoreInstanceState()`、`onPostCreate()` 几个回调方法。按我们的认知中，接下来就应该去走 `onResume` 了，这一步放在了 `handleLaunchActivity()` 中后面调用的 `handlerResumeActivity()` 里面，这里做了两件重要的事：
+可以看出，这个方法就是 `Activity` 用来将大量信息附加到自身，创建了 `PhoneWindow` 对象（后面在讲解 `WindowMangerService` 时叙述），构造出一个完整的运行框架。`performLaunchActivity()` 再接下来的重要方法是执行 `mInstrumentation.callActivityOnCreate()`，这个和之前分析 `onPause/onStop` 时类似，很熟悉了，会执行 `Activity.onCreate()` 方法。在之后顺着 `performLaunchActivity()` 走下去，调用了 `activity.performStart()` 、`mInstrumentation.callActivityOnRestoreInstanceState()`、`mInstrumentation.callActivityOnPostCreate()` 相继去调用了 `onStart()`、`onRestoreInstanceState()`、`onPostCreate()` 几个回调方法。按我们的认知中，接下来就应该去走 `onResume` 了，这一步放在了 `handleLaunchActivity()` 中后面调用的 `handlerResumeActivity()` 里面，这里做了两件重要的事：
 
 1. 调用 `performResumeActivity()` 
 2. 处理 decorView，设置可见，这个在后面分析 `View` 三大流程时再进行分析
