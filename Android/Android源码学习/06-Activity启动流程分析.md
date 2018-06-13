@@ -607,7 +607,7 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
     }
 ```
 
-这个代码中，首先 `mService.getProcessRecordLocked(r.processName, r.info.applicationInfo.uid, true)` 会查询是否已经存在指定的进程信息，如果存在则复用它，然后走 `realStartActivityLocked()` 方法，否则使用 `ActivityManagerService.startProcessLocked()` 在其中最终会使用 `Process.start()` 通过 zygote 启动一个新的进程，本质是 fork 出一个子进程，然后在子进程中去执行 `ActivityThread.main()` 方法。如果是从 Launcher 打开我们的 APP，就会走后面这个方式，我们继续分析这种情况，此时看看 `ActivityThread.main()` 的代码：
+这个代码中，首先 `mService.getProcessRecordLocked(r.processName, r.info.applicationInfo.uid, true)` 会查询是否已经存在指定的进程信息，如果存在则复用它，然后走 `realStartActivityLocked()` 方法，否则使用 `ActivityManagerService.startProcessLocked()` 在其中最终会使用 `Process.start()` 以 socket通 信的形式通过 zygote 启动一个新的进程，本质是 fork 出一个子进程，然后在子进程中去执行 `ActivityThread.main()` 方法。如果是从 Launcher 打开我们的 APP，就会走后面这个方式，我们继续分析这种情况，此时看看 `ActivityThread.main()` 的代码：
 
 ```Java
     public static void main(String[] args) {
@@ -858,7 +858,7 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
     }
 ```
 
-这里面把 `Activity` 的启动过程又分为了 Launch 和 Resume 两个阶段，分别由 `performLaunchActivity()` 和 `handlerResumeActivity()` 完成。看看它的源码：
+这里面把 `Activity` 的启动过程又分为了 Launch 和 Resume 两个阶段，分别由 `performLaunchActivity()` 和 `handleResumeActivity()` 完成。看看它的源码：
 
 ```java
 
@@ -995,7 +995,7 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
     }
 ```
 
-可以看出，这个方法就是 `Activity` 用来将大量信息附加到自身，构造出一个完整的运行框架。`performLaunchActivity()` 再接下来的重要方法是执行 ``mInstrumentation.callActivityOnCreate()`，这个和之前分析 `onPause/onStop` 时类似，很熟悉了，会执行 `Activity.onCreate()` 方法。在之后顺着 `performLaunchActivity()` 走下去，调用了 `activity.performStart()` 、`mInstrumentation.callActivityOnRestoreInstanceState()`、`mInstrumentation.callActivityOnPostCreate()` 相继去调用了 `onStart()`、`onRestoreInstanceState()`、`onPostCreate()` 几个回调方法。按我们的认知中，接下来就应该去走 `onResume` 了，这一步放在了 `handleLaunchActivity()` 中后面调用的 `handlerResumeActivity()` 里面，这里做了两件重要的事：
+可以看出，这个方法就是 `Activity` 用来将大量信息附加到自身，构造出一个完整的运行框架。`performLaunchActivity()` 再接下来的重要方法是执行 `mInstrumentation.callActivityOnCreate()`，这个和之前分析 `onPause/onStop` 时类似，很熟悉了，会执行 `Activity.onCreate()` 方法。在之后顺着 `performLaunchActivity()` 走下去，调用了 `activity.performStart()` 、`mInstrumentation.callActivityOnRestoreInstanceState()`、`mInstrumentation.callActivityOnPostCreate()` 相继去调用了 `onStart()`、`onRestoreInstanceState()`、`onPostCreate()` 几个回调方法。按我们的认知中，接下来就应该去走 `onResume` 了，这一步放在了 `handleLaunchActivity()` 中后面调用的 `handlerResumeActivity()` 里面，这里做了两件重要的事：
 
 1. 调用 `performResumeActivity()` 
 2. 处理 decorView，设置可见，这个在后面分析 `View` 三大流程时再进行分析
@@ -1254,4 +1254,3 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
 ```
 
 也就是执行完 resume 之后，这里去调用了 AMS 的 `activityIdle()` ，然后其中又走到了 `ActivityStackSupervisor.activityIdleInternalLocked()` 方法，再走到 `ActivityStack.stopActivityLocked()` 方法，这里面走到了我们已经很熟悉的那一套，调用 `IApplicationThread.scheduleStopActivity()`，这里来到 `ActivityThread` 中了，类似于 pause 的流程，方法执行顺序为 `ActivityThread.handleStopActivity()` -> `ActivityThread.performStopActivityInner()` -> `ActivityThread.performPauseActivityIfNeeded()` ，最后这方法里面通过  `callCallActivityOnSaveInstanceState()` 执行 `onSaveInstanceState()` 方法，通过 `Activity.performStop()` 执行 `onStop()` 操作，所在 stop 的步骤完成。把 `onStop()` 放在消息队列空闲时执行，有利于提高打开新 `Activity` 的效率。
-
