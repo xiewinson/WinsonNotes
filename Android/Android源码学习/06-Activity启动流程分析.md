@@ -760,7 +760,7 @@ Launcher 是一个应用，所以从 Launcher 启动我们的 APP，其实也是
         }
 ```
 
-可以看到这里传递了 `PackageManagerService`、`WindowManagerService`、`AlarmManagerService` 作为通用服务传递给了应用，在应用中使用了 `ServiceManager.initServiceCache(services)` 保存起来作为通用服务，这里可以看到新建了一个 `AppBindData` 对象封装 AMS 传递过来的数据，然后通过 `Handler` 调用了 `ActivityThread.handleBindApplication()`，代码太长不贴，讲一下里面的重点步骤：
+可以看到这里传递了 `PackageManagerService`、`WindowManagerService`、`AlarmManagerService` 作为通用服务传递给了应用（在实际测试中，发现 android P 的代码中传递了更多的服务），在应用中使用了 `ServiceManager.initServiceCache(services)` 保存起来作为通用服务，这里可以看到新建了一个 `AppBindData` 对象封装 AMS 传递过来的数据，然后通过 `Handler` 调用了 `ActivityThread.handleBindApplication()`，代码太长不贴，讲一下里面的重点步骤：
 
 1. 为应用程序设置进程名
 2. 创建应用的 `Application`，并设置进程的初始 `Application`
