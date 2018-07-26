@@ -635,7 +635,7 @@ public interface Callback {
     }
 ```
 
-然后这里又去调用了 WMS 的 `adWindow()` 方法：
+然后这里又去调用了 WMS 的 `addWindow()` 方法：
 
 ```java
 	public int addWindow(Session session, IWindow client, int seq,
@@ -717,7 +717,23 @@ public interface Callback {
     }
 ```
 
-这里首先通过 `mPolicy.checkAddPermission()` 检查了权限，如果是应用窗口，`WindowToken` 就一定不能为空，而且必须是对应 `Activity` 的 `AppToken`，且 `Activity` 不能已经 finish 掉的。然后判断了如果 `type` 为子窗口的情况下 `parentWindow` 是否为空，然后又判断了 `parentWindow` 的类型是否是子 `Window`，可知只允许 `Window` 的结构最多两层，子窗口使用所在父窗口的 `WindowToken`。对于系统类型的窗口，一部分需要 token 一部分不需要。窗口在 WMS 中通过一个 `WindowState` 进行管理，一个 `WindowState` 对应一个窗口，创建之后会保存到 `mWindowMap` 这个 `WindowHashMap` 之中，使用的 key 是 `ViewRootImpl` 中的那个 `W` 类的对象即 `IWindow`，便于查找。最终将创建的 `WindowState` 通过 `WindowToken.addWindow()` 添加进去了。
+这里首先通过 `mPolicy.checkAddPermission()` 检查了权限，如果是应用窗口，`WindowToken` 就一定不能为空，而且必须是对应 `Activity` 的 `AppToken`，且 `Activity` 不能已经 finish 掉的。然后判断了如果 `type` 为子窗口的情况下 `parentWindow` 是否为空，然后又判断了 `parentWindow` 的类型是否是子 `Window`，可知只允许 `Window` 的结构最多两层，子窗口使用所在父窗口的 `WindowToken`。对于系统类型的窗口，一部分需要 token 一部分不需要。窗口在 WMS 中通过一个 `WindowState` 进行管理，一个 `WindowState` 对应一个窗口，创建之后会保存到 `mWindowMap` 这个 `WindowHashMap` 之中，使用的 key 是 `ViewRootImpl` 中的那个 `W` 类的对象即 `IWindow`，便于查找。最终将创建的 `WindowState` 通过 `WindowToken.addWindow()` 添加进去了。至于更里面的细节，这篇文章不进行分析了，后面有时间再更加深入去看 WMS 里的代码。回到 `handleResumeActivity()` 中：
+
+```java
+	final void handleResumeActivity(IBinder token,
+            boolean clearHide, boolean isForward, boolean reallyResume, int seq, String reason) {
+    	// ...
+		r = performResumeActivity(token, clearHide, reason);
+        // ...
+        View decor = r.window.getDecorView();
+		decor.setVisibility(View.INVISIBLE);
+        // ...
+        r.activity.makeVisible();
+        // ...
+    }
+```
+
+从这可以看出，确实是在 `onResume` 生命周期之后 `Activity` 的界面才是可见的。
 
 最后总结一下：
 
