@@ -441,4 +441,63 @@ public class NotificationManagerService extends SystemService {
 	}
 ```
 
-这里会发一个延时的消息来 hide 这个窗口。`handleShow()` 方法的最后是 `WindowManager.addView()` ，这一点在上篇文章已经分析过了。最后有一点需要提一下，在 Android 5.0 后，新增了每个 APP 的通知权限，如果用户禁用了某个 APP 的应用权限，因为 Toast 也使用了NMS，所以这个 APP 连 Toast 也没法显示了，所以现在官方其实更推荐使用 SnackBar 来替代 Toast。 
+这里会发一个延时的消息来 hide 这个窗口。`handleShow()` 方法的最后是 `WindowManager.addView()` ，这一点在上篇文章已经分析过了。Toast 还有个方法是 `cancel()`：
+
+```java
+	public void cancel() {
+        mTN.cancel();
+    }
+
+	public void cancel() {
+    	if (localLOGV) Log.v(TAG, "CANCEL: " + this);
+    	mHandler.obtainMessage(CANCEL).sendToTarget();
+	}
+```
+
+这个 `cancel()` 就是通过 Handler 发一个 CANCEL 消息，可以看到刚才 `handleShow()` 方法在开始的地方会判断一下是否包含 CANCEL 或者 HIDE 消息，如果包含就直接不显示了。再看看 `handleMessage()` 中的处理:
+
+```java
+	case CANCEL: {
+    	handleHide();
+        // Don't do this in handleHide() because it is also invoked by
+        // handleShow()
+        mNextView = null;
+        try {
+        	getService().cancelToast(mPackageName, TN.this);
+		} catch (RemoteException e) {
+        }
+        break;
+	}
+```
+
+首先 hide 了这个 Toast，也就是直接用 WindowManager 移除了 View，然后调用 NMS 的 `cancelToast()` 方法，看看是如何处理的：
+
+```java
+	public void cancelToast(String pkg, ITransientNotification callback) {
+            Slog.i(TAG, "cancelToast pkg=" + pkg + " callback=" + callback);
+
+            if (pkg == null || callback == null) {
+                Slog.e(TAG, "Not cancelling notification. pkg=" + pkg + " callback=" + callback);
+                return ;
+            }
+
+            synchronized (mToastQueue) {
+                long callingId = Binder.clearCallingIdentity();
+                try {
+                    int index = indexOfToastLocked(pkg, callback);
+                    if (index >= 0) {
+                        cancelToastLocked(index);
+                    } else {
+                        Slog.w(TAG, "Toast already cancelled. pkg=" + pkg
+                                + " callback=" + callback);
+                    }
+                } finally {
+                    Binder.restoreCallingIdentity(callingId);
+                }
+            }
+        }
+```
+
+这里面也是去调用了 `cancelToastLocked()` 方法。
+
+最后有一点需要提一下，在 Android 5.0 后，新增了每个 APP 的通知权限，如果用户禁用了某个 APP 的应用权限，因为 Toast 也使用了NMS，所以这个 APP 连 Toast 也没法显示了，所以现在官方其实更推荐使用 SnackBar 来替代 Toast。 
