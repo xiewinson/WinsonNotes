@@ -103,7 +103,7 @@ public final void addActivity(PackageParser.Activity a, String type) {
 最后在 `SystemServer` 中调用 `mPackageManagerService.systemReady()` 通知其他服务就绪设置相关信息
 ### 查询组件
 
-仍然以查询 `activity` 为例，基本上在客户端查询 `activity` 最后都会走到服务端 AMS 类的 `queryIntentActivitiesInternal` 类，源码太多太杂，基本上的流程就是：
+仍然以查询 `activity` 为例，基本上在客户端查询 `activity` 最后都会走到服务端 PMS 类的 `queryIntentActivitiesInternal` 类，源码太多太杂，基本上的流程就是：
 1. 如果 `Intent` 指明了 `Component`，则直接查询该 `Component` 对应的 `ActivityInfo`
 2. 如果Intent指明了 `Package` 名，则根据 `Package` 名找到该 `Package`，然后再从该 `Package` 包含的 `Activities` 中进行匹配查询。
 3. 如果上面条件都不满足，则需要在全系统范围内进行匹配查询
